@@ -1,0 +1,470 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Бібліотека - Управління книгами</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <style>
+        .book-card {
+            transition: transform 0.2s;
+        }
+        .book-card:hover {
+            transform: translateY(-5px);
+        }
+        .status-available { border-left: 4px solid #28a745; }
+        .status-borrowed { border-left: 4px solid #dc3545; }
+        .status-maintenance { border-left: 4px solid #ffc107; }
+        .stats-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+    </style>
+</head>
+<body class="bg-light">
+    <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
+        <div class="container">
+            <a class="navbar-brand" href="#">
+                <i class="fas fa-book"></i> Бібліотека
+            </a>
+        </div>
+    </nav>
+
+    <div class="container mt-4">
+        <div class="row mb-4">
+            <div class="col-md-3">
+                <div class="card stats-card">
+                    <div class="card-body text-center">
+                        <i class="fas fa-book fa-2x mb-2"></i>
+                        <h3 id="totalBooks">0</h3>
+                        <p class="mb-0">Всього книг</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card bg-success text-white">
+                    <div class="card-body text-center">
+                        <i class="fas fa-check-circle fa-2x mb-2"></i>
+                        <h3 id="availableBooks">0</h3>
+                        <p class="mb-0">Доступні</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card bg-danger text-white">
+                    <div class="card-body text-center">
+                        <i class="fas fa-hand-paper fa-2x mb-2"></i>
+                        <h3 id="borrowedBooks">0</h3>
+                        <p class="mb-0">Видані</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card bg-info text-white">
+                    <div class="card-body text-center">
+                        <i class="fas fa-tags fa-2x mb-2"></i>
+                        <h3 id="totalGenres">0</h3>
+                        <p class="mb-0">Жанрів</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row mb-4">
+            <div class="col-md-6">
+                <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addBookModal">
+                    <i class="fas fa-plus"></i> Додати книгу
+                </button>
+            </div>
+            <div class="col-md-6">
+                <div class="input-group">
+                    <input type="text" class="form-control" id="searchInput" placeholder="Пошук за назвою або автором...">
+                    <button class="btn btn-outline-secondary" type="button" id="searchBtn">
+                        <i class="fas fa-search"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <div class="row mb-4">
+            <div class="col-md-6">
+                <select class="form-select" id="statusFilter">
+                    <option value="">Всі статуси</option>
+                    <option value="available">Доступні</option>
+                    <option value="borrowed">Видані</option>
+                    <option value="maintenance">На обслуговуванні</option>
+                </select>
+            </div>
+            <div class="col-md-6">
+                <input type="text" class="form-control" id="genreFilter" placeholder="Фільтр за жанром...">
+            </div>
+        </div>
+
+        <div class="row" id="booksContainer">
+        </div>
+    </div>
+
+    <div class="modal fade" id="addBookModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Додати нову книгу</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <form id="addBookForm">
+                    <div class="modal-body">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label class="form-label">Назва книги *</label>
+                                    <input type="text" class="form-control" name="title" required>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label class="form-label">Автор *</label>
+                                    <input type="text" class="form-control" name="author" required>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label class="form-label">ISBN</label>
+                                    <input type="text" class="form-control" name="isbn">
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label class="form-label">Рік видання</label>
+                                    <input type="number" class="form-control" name="publishedYear" min="1000" max="2024">
+                                </div>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label class="form-label">Жанр</label>
+                                    <input type="text" class="form-control" name="genre">
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label class="form-label">Кількість сторінок</label>
+                                    <input type="number" class="form-control" name="pages" min="1">
+                                </div>
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Опис</label>
+                            <textarea class="form-control" name="description" rows="3"></textarea>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Статус</label>
+                            <select class="form-select" name="status">
+                                <option value="available">Доступна</option>
+                                <option value="borrowed">Видана</option>
+                                <option value="maintenance">На обслуговуванні</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Скасувати</button>
+                        <button type="submit" class="btn btn-primary">Додати книгу</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade" id="editBookModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Редагувати книгу</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <form id="editBookForm">
+                    <input type="hidden" id="editBookId">
+                    <div class="modal-body">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label class="form-label">Назва книги *</label>
+                                    <input type="text" class="form-control" name="title" id="editTitle" required>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label class="form-label">Автор *</label>
+                                    <input type="text" class="form-control" name="author" id="editAuthor" required>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label class="form-label">ISBN</label>
+                                    <input type="text" class="form-control" name="isbn" id="editIsbn">
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label class="form-label">Рік видання</label>
+                                    <input type="number" class="form-control" name="publishedYear" id="editYear" min="1000" max="2024">
+                                </div>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label class="form-label">Жанр</label>
+                                    <input type="text" class="form-control" name="genre" id="editGenre">
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label class="form-label">Кількість сторінок</label>
+                                    <input type="number" class="form-control" name="pages" id="editPages" min="1">
+                                </div>
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Опис</label>
+                            <textarea class="form-control" name="description" id="editDescription" rows="3"></textarea>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Статус</label>
+                            <select class="form-select" name="status" id="editStatus">
+                                <option value="available">Доступна</option>
+                                <option value="borrowed">Видана</option>
+                                <option value="maintenance">На обслуговуванні</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Скасувати</button>
+                        <button type="submit" class="btn btn-primary">Зберегти зміни</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/js/bootstrap.bundle.min.js"></script>
+    <script>
+        const API_BASE = '/api';
+
+        document.addEventListener('DOMContentLoaded', function() {
+            loadBooks();
+            loadStats();
+
+            document.getElementById('addBookForm').addEventListener('submit', addBook);
+            document.getElementById('editBookForm').addEventListener('submit', editBook);
+            document.getElementById('searchBtn').addEventListener('click', searchBooks);
+            document.getElementById('searchInput').addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') searchBooks();
+            });
+            document.getElementById('statusFilter').addEventListener('change', filterBooks);
+            document.getElementById('genreFilter').addEventListener('input', filterBooks);
+        });
+
+        async function loadStats() {
+            try {
+                const response = await fetch(`${API_BASE}/stats`);
+                const stats = await response.json();
+
+                document.getElementById('totalBooks').textContent = stats.totalBooks;
+                document.getElementById('availableBooks').textContent = stats.availableBooks;
+                document.getElementById('borrowedBooks').textContent = stats.borrowedBooks;
+                document.getElementById('totalGenres').textContent = stats.totalGenres;
+            } catch (error) {
+                console.error('Error loading stats:', error);
+            }
+        }
+
+        async function loadBooks(filters = {}) {
+            try {
+                const params = new URLSearchParams(filters);
+                const response = await fetch(`${API_BASE}/books?${params}`);
+                const books = await response.json();
+                displayBooks(books);
+            } catch (error) {
+                console.error('Error loading books:', error);
+            }
+        }
+
+        function displayBooks(books) {
+            const container = document.getElementById('booksContainer');
+
+            if (books.length === 0) {
+                container.innerHTML = `
+                    <div class="col-12">
+                        <div class="alert alert-info text-center">
+                            <i class="fas fa-info-circle"></i> Книг не знайдено
+                        </div>
+                    </div>
+                `;
+                return;
+            }
+
+            container.innerHTML = books.map(book => `
+                <div class="col-md-6 col-lg-4 mb-4">
+                    <div class="card book-card h-100 status-${book.status}">
+                        <div class="card-body">
+                            <h5 class="card-title">${book.title}</h5>
+                            <p class="card-text">
+                                <strong>Автор:</strong> ${book.author}<br>
+                                ${book.genre ? `<strong>Жанр:</strong> ${book.genre}<br>` : ''}
+                                ${book.publishedYear ? `<strong>Рік:</strong> ${book.publishedYear}<br>` : ''}
+                                ${book.pages ? `<strong>Сторінок:</strong> ${book.pages}<br>` : ''}
+                                <span class="badge bg-${getStatusColor(book.status)}">${getStatusText(book.status)}</span>
+                            </p>
+                            ${book.description ? `<p class="card-text"><small class="text-muted">${book.description}</small></p>` : ''}
+                        </div>
+                        <div class="card-footer">
+                            <button class="btn btn-sm btn-outline-primary" onclick="editBookModal('${book._id}')">
+                                <i class="fas fa-edit"></i> Редагувати
+                            </button>
+                            <button class="btn btn-sm btn-outline-danger" onclick="deleteBook('${book._id}')">
+                                <i class="fas fa-trash"></i> Видалити
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        async function addBook(e) {
+            e.preventDefault();
+            const formData = new FormData(e.target);
+            const book = Object.fromEntries(formData);
+
+            try {
+                const response = await fetch(`${API_BASE}/books`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(book)
+                });
+
+                if (response.ok) {
+                    bootstrap.Modal.getInstance(document.getElementById('addBookModal')).hide();
+                    e.target.reset();
+                    loadBooks();
+                    loadStats();
+                } else {
+                    const error = await response.json();
+                    alert('Помилка: ' + error.error);
+                }
+            } catch (error) {
+                console.error('Error adding book:', error);
+                alert('Помилка при додаванні книги');
+            }
+        }
+
+        async function editBookModal(id) {
+            try {
+                const response = await fetch(`${API_BASE}/books/${id}`);
+                const book = await response.json();
+
+                document.getElementById('editBookId').value = book._id;
+                document.getElementById('editTitle').value = book.title;
+                document.getElementById('editAuthor').value = book.author;
+                document.getElementById('editIsbn').value = book.isbn || '';
+                document.getElementById('editYear').value = book.publishedYear || '';
+                document.getElementById('editGenre').value = book.genre || '';
+                document.getElementById('editPages').value = book.pages || '';
+                document.getElementById('editDescription').value = book.description || '';
+                document.getElementById('editStatus').value = book.status;
+
+                new bootstrap.Modal(document.getElementById('editBookModal')).show();
+            } catch (error) {
+                console.error('Error loading book for edit:', error);
+            }
+        }
+
+        async function editBook(e) {
+            e.preventDefault();
+            const formData = new FormData(e.target);
+            const book = Object.fromEntries(formData);
+            const id = document.getElementById('editBookId').value;
+
+            try {
+                const response = await fetch(`${API_BASE}/books/${id}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(book)
+                });
+
+                if (response.ok) {
+                    bootstrap.Modal.getInstance(document.getElementById('editBookModal')).hide();
+                    loadBooks();
+                    loadStats();
+                } else {
+                    const error = await response.json();
+                    alert('Помилка: ' + error.error);
+                }
+            } catch (error) {
+                console.error('Error updating book:', error);
+                alert('Помилка при оновленні книги');
+            }
+        }
+
+        async function deleteBook(id) {
+            if (!confirm('Ви впевнені, що хочете видалити цю книгу?')) return;
+
+            try {
+                const response = await fetch(`${API_BASE}/books/${id}`, {
+                    method: 'DELETE'
+                });
+
+                if (response.ok) {
+                    loadBooks();
+                    loadStats();
+                } else {
+                    alert('Помилка при видаленні книги');
+                }
+            } catch (error) {
+                console.error('Error deleting book:', error);
+                alert('Помилка при видаленні книги');
+            }
+        }
+
+        function searchBooks() {
+            const search = document.getElementById('searchInput').value;
+            const status = document.getElementById('statusFilter').value;
+            const genre = document.getElementById('genreFilter').value;
+
+            const filters = {};
+            if (search) filters.search = search;
+            if (status) filters.status = status;
+            if (genre) filters.genre = genre;
+
+            loadBooks(filters);
+        }
+
+        function filterBooks() {
+            searchBooks();
+        }
+
+        function getStatusColor(status) {
+            const colors = {
+                'available': 'success',
+                'borrowed': 'danger',
+                'maintenance': 'warning'
+            };
+            return colors[status] || 'secondary';
+        }
+
+        function getStatusText(status) {
+            const texts = {
+                'available': 'Доступна',
+                'borrowed': 'Видана',
+                'maintenance': 'На обслуговуванні'
+            };
+            return texts[status] || status;
+        }
+    </script>
+</body>
+</html>
